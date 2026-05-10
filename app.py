@@ -4,10 +4,16 @@
 import streamlit as st
 
 from research import fetch_research
-from storage import list_reports, load_report, save_report
+from storage import (
+    list_reports,
+    load_report,
+    report_to_markdown,
+    report_to_pdf_bytes,
+    save_report,
+)
 
 
-def render_result(result: dict) -> None:
+def render_result(result: dict, report_id: str = "") -> None:
     """Render a research result payload to the Streamlit page."""
     st.success(f"Researching: {result['topic']}")
     if result.get("warning"):
@@ -42,6 +48,29 @@ def render_result(result: dict) -> None:
         height=240,
         disabled=False,
     )
+
+    st.subheader("Export")
+    safe_topic = str(result.get("topic", "research-report")).strip().replace(" ", "-").lower()
+    file_stem = f"{safe_topic}-{report_id}" if report_id else safe_topic
+    markdown_content = report_to_markdown(result)
+    pdf_bytes = report_to_pdf_bytes(result)
+    col_md, col_pdf = st.columns(2)
+    with col_md:
+        st.download_button(
+            "Download Markdown",
+            data=markdown_content,
+            file_name=f"{file_stem}.md",
+            mime="text/markdown",
+            use_container_width=True,
+        )
+    with col_pdf:
+        st.download_button(
+            "Download PDF",
+            data=pdf_bytes,
+            file_name=f"{file_stem}.pdf",
+            mime="application/pdf",
+            use_container_width=True,
+        )
 
 
 st.set_page_config(page_title="AI Research Agent", layout="centered")
@@ -100,7 +129,7 @@ if st.session_state.active_result:
     if st.session_state.active_result["status"] == "ok":
         if st.session_state.active_report_id:
             st.caption(f"Saved report ID: {st.session_state.active_report_id}")
-        render_result(st.session_state.active_result)
+        render_result(st.session_state.active_result, st.session_state.active_report_id)
     else:
         st.error(st.session_state.active_result["error"])
 else:

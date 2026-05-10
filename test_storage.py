@@ -40,6 +40,31 @@ class StorageTest(unittest.TestCase):
             finally:
                 storage.REPORTS_DIR = original_dir
 
+    def test_report_to_markdown_contains_sections(self) -> None:
+        result = {
+            "topic": "machine learning",
+            "summary": "A summary.",
+            "confidence": {"score": 0.7, "label": "medium"},
+            "key_point_evidence": [{"point": "Point one"}],
+            "next_questions": ["What next?"],
+            "references": [{"title": "Ref", "url": "https://example.com"}],
+        }
+        md = storage.report_to_markdown(result)
+        self.assertIn("# Research Report: machine learning", md)
+        self.assertIn("## Summary", md)
+        self.assertIn("## References", md)
+
+    def test_report_to_pdf_bytes_has_pdf_header(self) -> None:
+        result = {
+            "topic": "machine learning",
+            "summary": "A summary.",
+            "confidence": {"score": 0.7, "label": "medium"},
+            "key_point_evidence": [],
+            "references": [],
+        }
+        pdf_bytes = storage.report_to_pdf_bytes(result)
+        self.assertTrue(pdf_bytes.startswith(b"%PDF"))
+
 
 if __name__ == "__main__":
     unittest.main()
